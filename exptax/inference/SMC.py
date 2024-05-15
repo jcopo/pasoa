@@ -90,10 +90,10 @@ def markov_step(particles, rng_key, scale, potential_fn):
     )
 
     mrkv = blackjax.additive_step_random_walk.normal_random_walk(
-        lambda x: potential_fn(x, rng_key), cov
+        potential_fn, cov
     )
     state = mrkv.init(particles)
-    new_state, info = mrkv.step(rng_key + 1, state)
+    new_state, info = mrkv.step(rng_key, state)
     # jax.debug.print("Markov Info: {}, {}", info.acceptance_rate, info.is_accepted)
     # jax.debug.print("Markov Info: {}", info.acceptance_rate)
     return new_state.position
@@ -120,7 +120,7 @@ def SMC_kernel(rng_key, log_lik, log_prob, state, resampling_fn):
     moved_particles = jax.vmap(step, in_axes=(0, 0, None))(n_particles, keys, scale)
 
     # calculate weights and normalize
-    weights = jax.vmap(log_lik, in_axes=(0, 0))(moved_particles, keys)
+    weights = jax.vmap(log_lik)(moved_particles)
     n_wei, _ = _normalize(weights)
 
     return moved_particles, n_wei
@@ -135,7 +135,7 @@ def tempered_SMC_kernel(rng_key, state, log_lik, potential):
         lmbda = state.lmbda
         max_delta = 1 - lmbda
         delta = ess.ess_solver(
-            lambda x: log_lik(x, rng_key),
+            log_lik,
             state.particles,
             target_ess,
             max_delta,
@@ -152,12 +152,12 @@ def tempered_SMC_kernel(rng_key, state, log_lik, potential):
     # logging.info(f"delta tempering:{delta}, current tempering:{state.lmbda}")
     lmbda = delta + state.lmbda
 
-    def tempered_log_lik(particles, rng_key):
-        return delta * log_lik(particles, rng_key)
+    def tempered_log_lik(particles):
+        return delta * log_lik(particles)
 
-    def tempered_log_prob(particles, rng_key):
+    def tempered_log_prob(particles):
         logprior = potential(particles)
-        tempered_loglikelihood = state.lmbda * log_lik(particles, rng_key)
+        tempered_loglikelihood = state.lmbda * log_lik(particles)
         return logprior + tempered_loglikelihood
 
     n_particles, weights = SMC_kernel(
@@ -185,7 +185,7 @@ def smc_inference_loop(rng_key, hist, initial_state, exp_model, n_meas):
     potential = exp_model.make_potential(hist, n_meas)
     smc_kernel = partial(
         tempered_SMC_kernel,
-        log_lik=lambda theta, rng_key: exp_model.log_prob(theta, y_measured, xi_star),
+        log_lik=lambda theta: exp_model.log_prob(theta, y_measured, xi_star),
         potential=potential,
     )
 
@@ -206,15 +206,11 @@ def smc_inference_loop(rng_key, hist, initial_state, exp_model, n_meas):
     return n_iter, final_state
 
 
-@partial(jax.jit, static_argnums=(4,))
 def smc_no_temp(rng_key, hist, initial_state, exp_model, n_meas):
     last_data = jax.tree_map(lambda x: x[n_meas], hist)
     xi_star, y_measured = last_data["xi"], last_data["meas"]
-    log_lik = lambda theta, rng_key: exp_model.log_prob(theta, y_measured, xi_star)
-    potential = partial(
-        exp_model.make_potential(hist, rng_key, n_meas),
-        params_distrib=exp_model.params_distrib,
-    )
+    log_lik = lambda theta: exp_model.log_prob(theta, y_measured, xi_star)
+    potential = exp_model.make_potential(hist, n_meas)
     thetas, weights = SMC_kernel(
         rng_key, log_lik, potential, initial_state, resampling.systematic
     )

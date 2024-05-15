@@ -1,4 +1,8 @@
 ## Code Base for PASOA- PArticle baSed Bayesian Optimal Adaptive design (ICML 2024)
+<p align="center">
+<img src="./img/part.png" width="1000"/>
+</p>
+
 
 https://arxiv.org/abs/2402.07160
 
