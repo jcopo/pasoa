@@ -39,9 +39,9 @@ print(jax.devices())
 def make_SGD(exp_model, writer, opt_steps, energy):
     # SGD
     exponential_decay_scheduler = optax.exponential_decay(
-        init_value=1e-1,
+        init_value=1e-2,
         transition_steps=opt_steps,
-        decay_rate=0.98,
+        decay_rate=0.95,
         transition_begin=int(opt_steps * 0.25),
         staircase=False,
     )
@@ -56,30 +56,6 @@ def make_SGD(exp_model, writer, opt_steps, energy):
     )
 
     return opt
-
-
-def make_PT(exp_model, writer, opt_steps, energy):
-    # PT
-    temps = np.array([0.001, 0.005, 0.01, 0.03, 0.05])
-    # temps = np.array([0.001, 0.01, 0.03, 0.05, .09])
-    # temps = np.array([0.01, 0.3, 0.5, 70., 80., 100., 1000.])
-    step_size = 1e1 * (temps) ** (1 / 4)
-
-    opt = ParallelTempering(
-        exp_model,
-        writer,
-        temps,
-        blackjax.additive_step_random_walk.normal_random_walk,
-        {"sigma": step_size},
-        # blackjax.mala,
-        # {"step_size":step_size},
-        # hmc_parameters,
-        opt_steps,
-        energy,
-    )
-
-    return opt
-
 
 
 

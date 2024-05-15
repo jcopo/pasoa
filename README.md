@@ -1,10 +1,23 @@
-# Bayesian Optimal Experimental Design in JAX
+## Code Base for PASOA- PArticle baSed Bayesian Optimal Adaptive design (ICML 2024)
 
+https://arxiv.org/abs/2402.07160
 
-Example usage:
+This repo was tested using Python 3.11 . Required packages can be install using conda:
 
 ```
-python sources.py --num_meas=10 --iter_per_meas=100 --plot_post
-python -m test.plot_natural
-python -i -m test.eig_1d
+conda env create -n ENVNAME --file environment.yml
 ```
+
+To reproduce the results, you can run:
+
+## Sources
+```
+python sources.py --num_meas=31 --inner_samples=100 --outer_samples=200 --num_sources=2 --name=TSMC --rng_key=1 --iter_per_meas=3000
+```
+Runs in ~120s on an Apple M1Pro CPU, add --plot_post for plots of the procedure.
+
+## CES
+```
+python ces.py --inner_samples=100 --outer_samples=400 --num_meas=11  --rng_key=1 --name=TSMC
+```
+Runs in ~5m on an Apple M1Pro CPU, add --plot_post for plots of the procedure.

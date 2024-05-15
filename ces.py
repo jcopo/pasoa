@@ -140,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--type_loss", default="PCE", type=str)
     parser.add_argument("--opt_type", default="SGD", type=str)
     parser.add_argument("--name", default="", type=str)
-    parser.add_argument("--iter_per_meas", default=3000, type=int)
+    parser.add_argument("--iter_per_meas", default=1000, type=int)
     parser.add_argument("--num_meas", default=11, type=int)
     parser.add_argument("--plot_meas", action=argparse.BooleanOptionalAction)
     parser.add_argument("--no_temp", action=argparse.BooleanOptionalAction)
